@@ -1,0 +1,245 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #f4f4f4;
+}
+
+.top-text {
+    padding: 0 50px;
+    text-align: center;
+}
+
+.mid-text {
+    text-align: left;
+}
+
+.main-content-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(13, 1fr);
+    width: 500px;
+    height: 500px;
+    border: 2px solid #333;
+}
+
+.grid-button {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.grid-button.active {
+    background-color: #3d63b6;
+}
+
+.teacher-table {
+    background-color: #d8b4fe !important;
+}
+
+.grid-button.unselected-confirmed {
+    background-color: #808080 !important;
+    cursor: not-allowed;
+}
+
+.optimised-seat {
+    background-color: #a4d4a3 !important;
+    color: #000;
+    font-weight: bold;
+}
+
+.buttons,
+.condition-buttons,
+.group-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.layout-buttons {
+    width: 504px;
+    /* Grid width (500px) + borders (2px * 2) */
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-separator {
+    border-left: 2px solid #ccc;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.considerations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.considerations-row,
+.group-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.delete-row-btn,
+.delete-group-btn {
+    background: none;
+    border: none;
+    color: #ff0000;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 0;
+    padding: 0;
+    margin-right: 5px;
+}
+
+.delete-group-btn {
+    margin-left: auto;
+}
+
+.class-position {
+    margin-top: 20px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 18px;
+    transform: translateX(-170px);
+}
+
+.groups-container {
+    border: 2px solid #333;
+    padding: 20px;
+    height: 500px;
+    width: 275px;
+    overflow-y: auto;
+}
+
+.groups-container h2 {
+    text-align: center;
+    margin-top: 0;
+}
+
+#group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input,
+select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+input[type="number"] {
+    width: 80px;
+}
+
+input[type="text"] {
+    width: 150px;
+}
+
+input:disabled,
+select:disabled {
+    cursor: not-allowed;
+    background-color: #e9e9e9;
+    color: #a0a0a0;
+}
+
+.footer-buttons {
+    padding: 20px
+}
+
+.color-picker-container {
+    position: relative;
+}
+
+.selected-color {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.color-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    z-index: 1;
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.color-dropdown.show {
+    display: grid;
+}
+
+.color-option {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.group-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.group-action-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-top: 2px;
+}
+
+.group-action-btn:hover {
+    background-color: #d0d0d0;
+}
