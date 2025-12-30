@@ -1,0 +1,149 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #f4f4f4;
+}
+
+.top-text {
+    padding: 0 50px;
+    text-align: center;
+}
+
+.mid-text {
+    text-align: left;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(13, 1fr);
+    width: 500px;
+    height: 500px;
+    border: 2px solid #333;
+}
+
+.grid-button {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.grid-button.active {
+    background-color: #3c7ddd;
+}
+
+.teacher-table {
+    background-color: #d8b4fe !important;
+}
+
+.grid-button.unselected-confirmed {
+    background-color: #808080 !important;
+    cursor: not-allowed;
+}
+
+.optimised-seat {
+    background-color: #a4d4a3 !important;
+    color: #000;
+    font-weight: bold;
+}
+
+.buttons, .condition-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.layout-buttons {
+    width: 504px; /* Grid width (500px) + borders (2px * 2) */
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-separator {
+    border-left: 2px solid #ccc;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.considerations-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.considerations-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+.delete-row-btn {
+    background: none;
+    border: none;
+    color: #ff0000;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 0;
+    margin-right: 5px;
+}
+
+.class-position {
+    margin-top: 20px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input, select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+input[type="number"] {
+    width: 80px;
+}
+
+input:disabled, select:disabled {
+    cursor: not-allowed;
+    background-color: #e9e9e9;
+    color: #a0a0a0;
+}
+
+.footer-buttons{
+    padding: 20px
+}
