@@ -49,20 +49,20 @@ body {
 }
 
 .grid-button.active {
-    background-color: #3d63b6;
+    background-color: #88d0f5;
 }
 
 .teacher-table {
-    background-color: #d8b4fe !important;
+    background-color: #dccbf9 !important;
 }
 
 .grid-button.unselected-confirmed {
-    background-color: #808080 !important;
+    background-color: #b1b1b1 !important;
     cursor: not-allowed;
 }
 
 .optimised-seat {
-    background-color: #a4d4a3 !important;
+    background-color: #c6eec9 !important;
     color: #000;
     font-weight: bold;
 }

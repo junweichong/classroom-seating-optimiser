@@ -140,8 +140,8 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
         allowedSet: new Set(gc.allowedSeatIndices)
     }));
 
-    const populationSize = 500;
-    const generations = 250;
+    const populationSize = 5000;
+    const generations = 500;
     const mutationRate = 0.03;
     const tournamentSize = 8;
     const elitismCount = 2;

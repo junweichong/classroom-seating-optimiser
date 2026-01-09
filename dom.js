@@ -11,7 +11,11 @@ export const addConditionBtn = document.getElementById('addConditionBtn');
 export const optimiseBtn = document.getElementById('optimiseBtn');
 export const saveLayoutBtn = document.getElementById('saveLayoutBtn');
 export const loadLayoutBtn = document.getElementById('loadLayoutBtn');
+export const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+export const importClassListBtn = document.getElementById('importClassListBtn');
 export const loadLayoutInput = document.getElementById('loadLayoutInput');
+export const classCsvInput = document.getElementById('classCsvInput');
+export const importStatus = document.getElementById('importStatus');
 export const considerationsContainer = document.querySelector('.considerations-container');
 export const easterEgg = document.getElementById('easterEgg');
 export const addGroupBtn = document.getElementById('addGroupBtn');
@@ -95,9 +99,6 @@ export function addConditionRow(condition = null, studentCount) {
     inputs.forEach(input => {
         input.disabled = false;
         input.value = '';
-        if (input.type === 'number') {
-            input.max = studentCount;
-        }
     });
     newRow.querySelector('select[name="condition"]').value = 'Far';
     newRow.querySelector('select[name="importance"]').value = 'high';
@@ -211,21 +212,212 @@ export function populateColorDropdown(colorDropdown, currentGroupColor) {
 }
 
 
-export function displayArrangement(arrangement, seatCoords) {
-    document.querySelectorAll('.grid-button').forEach(btn => {
-        btn.textContent = '';
-        btn.classList.remove('optimised-seat');
-    });
+export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableCoord, groupsData = []) {
+    const popup = window.open('', '_blank', 'width=1100,height=900');
+    if (!popup) {
+        alert('Popup blocked! Please allow popups for this site.');
+        return;
+    }
 
-    arrangement.forEach((student, i) => {
-        const coord = seatCoords[i];
-        const index = coord.row * GRID_WIDTH + coord.col;
-        const button = document.querySelector(`.grid-button[data-index='${index}']`);
-        if (button) {
-            button.textContent = student;
-            button.classList.add('optimised-seat');
+    const doc = popup.document;
+    doc.title = 'Optimized Classroom Seating';
+
+    // Add html2canvas script
+    const script = doc.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    doc.head.appendChild(script);
+
+    // Add styles
+    const style = doc.createElement('style');
+    style.textContent = `
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            background-color: #f4f4f4; 
         }
-    });
+        .export-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(${GRID_WIDTH}, 1fr); 
+            width: 960px; 
+            height: auto; 
+            border: 2px solid #333; 
+            background-color: white; 
+        }
+        .grid-button { 
+            width: 100%; 
+            height: 64px; /* Square: 960px / 15 cols = 64px */
+            border: 1px solid #ccc; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 11px; 
+            font-weight: bold; 
+            box-sizing: border-box;
+            word-break: break-word; /* Wrap long text */
+            overflow: hidden;
+            min-width: 0; /* Allow shrinking below content size */
+            padding: 2px;
+            text-align: center;
+        }
+        .teacher-table { 
+            background-color: #dccbf9 !important; 
+        }
+        .optimised-seat { 
+            background-color: #c6eec9 !important; 
+        }
+        .class-position { 
+            margin: 10px 0; 
+            font-weight: bold; 
+            font-size: 18px; 
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .controls button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #e0e0e0;
+        }
+        .controls button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    `;
+    doc.head.appendChild(style);
+
+    // Create a container for export (to capture everything including labels)
+    const exportContainer = doc.createElement('div');
+    exportContainer.className = 'export-container';
+    doc.body.appendChild(exportContainer);
+
+    const backText = doc.createElement('div');
+    backText.className = 'class-position';
+    backText.textContent = 'Back of Class';
+    exportContainer.appendChild(backText);
+
+    const container = doc.createElement('div');
+    container.className = 'grid-container';
+    exportContainer.appendChild(container);
+
+    const frontText = doc.createElement('div');
+    frontText.className = 'class-position';
+    frontText.textContent = 'Front of Class';
+    exportContainer.appendChild(frontText);
+
+    // Render grid
+    for (let i = 0; i < GRID_SIZE; i++) {
+        const cell = doc.createElement('div');
+        cell.className = 'grid-button';
+
+        const row = Math.floor(i / GRID_WIDTH);
+        const col = i % GRID_WIDTH;
+
+        if (teacherTableCoord && teacherTableCoord.row === row && teacherTableCoord.col === col) {
+            cell.classList.add('teacher-table');
+            cell.textContent = 'T';
+        }
+
+        const seatIndex = seatCoords.findIndex(coord => coord.row === row && coord.col === col);
+        if (seatIndex !== -1) {
+            cell.classList.add('optimised-seat');
+            cell.textContent = arrangement[seatIndex];
+            cell.dataset.studentId = arrangement[seatIndex];
+
+            // Apply group color if student is in a group
+            const studentId = parseInt(arrangement[seatIndex], 10);
+            if (groupsData && groupsData.length > 0) {
+                for (const group of groupsData) {
+                    // Check if group.students contains this student ID
+                    // group.students is likely array of strings/numbers from input parsing. 
+                    // Let's normalize comparison.
+                    if (group.students && group.students.some(s => parseInt(s, 10) === studentId)) {
+                        cell.style.setProperty('background-color', group.color, 'important');
+                        break; // Assume student is in only one group for coloring
+                    }
+                }
+            }
+        }
+
+        container.appendChild(cell);
+    }
+
+    // Add Save as PNG button
+    const controls = doc.createElement('div');
+    controls.className = 'controls';
+
+    const displayNamesBtn = doc.createElement('button');
+    displayNamesBtn.textContent = 'Display names';
+    controls.appendChild(displayNamesBtn);
+
+    const displayIndexBtn = doc.createElement('button');
+    displayIndexBtn.textContent = 'Display index no.';
+    controls.appendChild(displayIndexBtn);
+
+    // Check for class list
+    const storedData = sessionStorage.getItem('classStudentData');
+    if (!storedData) {
+        displayNamesBtn.disabled = true;
+        displayIndexBtn.disabled = true;
+    } else {
+        const studentData = JSON.parse(storedData);
+
+        displayNamesBtn.onclick = () => {
+            const seats = doc.querySelectorAll('.optimised-seat');
+            seats.forEach(seat => {
+                const id = seat.dataset.studentId;
+                if (studentData[id]) {
+                    seat.textContent = studentData[id];
+                }
+            });
+        };
+
+        displayIndexBtn.onclick = () => {
+            const seats = doc.querySelectorAll('.optimised-seat');
+            seats.forEach(seat => {
+                seat.textContent = seat.dataset.studentId;
+            });
+        };
+    }
+
+    const saveBtn = doc.createElement('button');
+    saveBtn.id = 'savePngBtn';
+    saveBtn.textContent = 'Save as PNG';
+    controls.appendChild(saveBtn);
+    doc.body.appendChild(controls);
+
+    saveBtn.onclick = () => {
+        if (!popup.html2canvas) {
+            alert('Wait for library to load...');
+            return;
+        }
+        popup.html2canvas(exportContainer).then(canvas => {
+            const link = doc.createElement('a');
+            link.download = 'classroom-layout.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    };
 }
 
 function getColorName(hex) {

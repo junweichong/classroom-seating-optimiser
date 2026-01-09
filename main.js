@@ -4,7 +4,6 @@ import {
     addConditionRow,
     addGroupRow,
     updateGroupLabels,
-    displayArrangement,
     gridContainer,
     confirmTeacherBtn,
     reselectTeacherBtn,
@@ -16,10 +15,15 @@ import {
     saveLayoutBtn,
     loadLayoutBtn,
     loadLayoutInput,
+    downloadTemplateBtn,
+    importClassListBtn,
+    classCsvInput,
+    importStatus,
     groupList,
     considerationsContainer,
     populateColorDropdown,
-    updateAddGroupButtonState
+    updateAddGroupButtonState,
+    openOptimizedLayoutWindow
 } from './dom.js';
 import { runOptimisation } from './genetic-algorithm.js';
 import { saveLayout, loadLayout, applyLayout } from './layout.js';
@@ -66,15 +70,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bestArrangement = runOptimisation(considerations, studentCount, selectedSeatsCoords, teacherTableCoord, groupConstraints);
         if (bestArrangement) {
-            displayArrangement(bestArrangement, selectedSeatsCoords);
+            openOptimizedLayoutWindow(bestArrangement, selectedSeatsCoords, teacherTableCoord, groupConstraints);
         }
 
-        // Re-enable (optional, but usually we keep them disabled until Reset/Reselect? 
         // Based on existing patterns, we might want to keep them disabled until 'Reselect Seats' is clicked)
     });
-    saveLayoutBtn.addEventListener('click', () => saveLayout(teacherTableCoord, selectedSeatsCoords, getConsiderations, getGroupsData));
+    saveLayoutBtn.addEventListener('click', () => saveLayout(teacherTableCoord, selectedSeatsCoords, getRawConsiderations, getGroupsData));
     loadLayoutBtn.addEventListener('click', () => loadLayoutInput.click());
     loadLayoutInput.addEventListener('change', (event) => loadLayout(event, (layout) => applyLayout(layout, initialise, confirmTeacherSelection, confirmSelection, addConditionRow, addGroupRow)));
+
+    downloadTemplateBtn.addEventListener('click', () => {
+        const csvContent = "Index No,Name";
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'class list template.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+
+    importClassListBtn.addEventListener('click', () => classCsvInput.click());
+    classCsvInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const rows = text.split('\n');
+            const studentData = {};
+            let count = 0;
+
+            // Simple parsing: assume header exists
+            // Try to find indices for 'index'/'id' and 'name'
+            let idIndex = 0;
+            let nameIndex = 1;
+
+            if (rows.length > 0) {
+                const header = rows[0].toLowerCase().split(',');
+                const foundId = header.findIndex(h => h.includes('index') || h.includes('id') || h.includes('no'));
+                const foundName = header.findIndex(h => h.includes('name') || h.includes('student'));
+
+                if (foundId !== -1) idIndex = foundId;
+                if (foundName !== -1) nameIndex = foundName;
+            }
+
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i].trim();
+                if (!row) continue;
+
+                const cols = row.split(',');
+                if (cols.length < 2 && idIndex === 0 && nameIndex === 1) continue; // Skip malformed rows if extracting default
+
+                const id = parseInt(cols[idIndex].trim(), 10);
+                const name = cols[nameIndex] ? cols[nameIndex].trim() : '';
+
+                if (!isNaN(id) && name) {
+                    studentData[id] = name;
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                sessionStorage.setItem('classStudentData', JSON.stringify(studentData));
+                importStatus.textContent = `Successfully imported: ${file.name}`;
+                importStatus.style.color = 'green';
+                // alert(`Class list imported successfully! Loaded ${count} students.`);
+                setTimeout(() => {
+                    importStatus.textContent = '';
+                }, 5000);
+            } else {
+                alert('No valid student data found in CSV. Please ensure columns for "Index No" and "Name" exist.');
+            }
+            // Reset input so same file can be selected again
+            classCsvInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
     addGroupBtn.addEventListener('click', addGroupRow);
 
     groupList.addEventListener('click', (event) => {
@@ -226,12 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     considerationsContainer.addEventListener('input', (event) => {
-        if (event.target.type === 'number' && (event.target.name === 'integer1' || event.target.name === 'integer2')) {
-            const val = parseInt(event.target.value, 10);
-            if (event.target.value !== '' && val < 1) {
-                event.target.value = '';
-            }
-        }
+        // Validation removed as we allow text now. 
+        // We could add visual cues if the text doesn't match, but complexity increases.
+        // For now, let's trust the optimization step to handle resolution or failure.
     });
 
     document.addEventListener('keydown', (e) => {
@@ -479,15 +550,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getConsiderations() {
         return Array.from(document.querySelectorAll('.considerations-row')).map(row => {
-            const student1 = row.querySelector('[name="integer1"]').value;
+            const student1Input = row.querySelector('[name="integer1"]').value;
             const condition = row.querySelector('[name="condition"]').value;
-            const student2 = row.querySelector('[name="integer2"]').value;
+            const student2Input = row.querySelector('[name="integer2"]').value;
             const importance = row.querySelector('[name="importance"]').value;
 
+            const student1Id = findStudentId(student1Input);
+            const student2Id = findStudentId(student2Input);
+
             return {
-                student1: student1 ? parseInt(student1, 10) : null,
+                student1: student1Id,
                 condition,
-                student2: student2 ? parseInt(student2, 10) : null,
+                student2: student2Id,
                 importance
             };
         }).filter(c => {
@@ -500,9 +574,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function getRawConsiderations() {
+        return Array.from(document.querySelectorAll('.considerations-row')).map(row => {
+            const student1 = row.querySelector('[name="integer1"]').value;
+            const condition = row.querySelector('[name="condition"]').value;
+            const student2 = row.querySelector('[name="integer2"]').value;
+            const importance = row.querySelector('[name="importance"]').value;
+
+            return {
+                student1,
+                condition,
+                student2,
+                importance
+            };
+        }).filter(c => c.student1);
+    }
+
+    function findStudentId(input) {
+        if (!input) return null;
+
+        // If it's a direct number
+        const numeric = parseInt(input, 10);
+        if (!isNaN(numeric) && numeric.toString() === input.trim()) {
+            return numeric;
+        }
+
+        // It's a string, try to find in class list
+        const storedData = sessionStorage.getItem('classStudentData');
+        if (!storedData) return null; // No class list loaded
+
+        const studentData = JSON.parse(storedData);
+        const lowerInput = input.toLowerCase().trim();
+
+        // 1. Exact match by name
+        for (const [id, name] of Object.entries(studentData)) {
+            if (name.toLowerCase() === lowerInput) {
+                return parseInt(id, 10);
+            }
+        }
+
+        // 2. Starts with match
+        for (const [id, name] of Object.entries(studentData)) {
+            if (name.toLowerCase().startsWith(lowerInput)) {
+                return parseInt(id, 10);
+            }
+        }
+
+        // 3. Includes match
+        for (const [id, name] of Object.entries(studentData)) {
+            if (name.toLowerCase().includes(lowerInput)) {
+                return parseInt(id, 10);
+            }
+        }
+
+        return null;
+    }
+
     function getGroupConstraints() {
         return getGroupsData().map(g => ({
-            students: g.students.map(s => parseInt(s, 10)).filter(n => !isNaN(n)),
+            students: g.students.map(s => findStudentId(s)).filter(id => id !== null),
+            color: g.color,
             allowedSeatIndices: g.allowedSeatIndices
         })).filter(gc => gc.students.length > 0 && gc.allowedSeatIndices.length > 0);
     }

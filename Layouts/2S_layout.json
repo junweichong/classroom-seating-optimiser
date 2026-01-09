@@ -1,0 +1,281 @@
+{
+  "teacherTable": {
+    "row": 10,
+    "col": 12
+  },
+  "selectedSeats": [
+    {
+      "row": 2,
+      "col": 4
+    },
+    {
+      "row": 2,
+      "col": 5
+    },
+    {
+      "row": 2,
+      "col": 6
+    },
+    {
+      "row": 2,
+      "col": 8
+    },
+    {
+      "row": 2,
+      "col": 9
+    },
+    {
+      "row": 2,
+      "col": 10
+    },
+    {
+      "row": 4,
+      "col": 2
+    },
+    {
+      "row": 4,
+      "col": 3
+    },
+    {
+      "row": 4,
+      "col": 4
+    },
+    {
+      "row": 4,
+      "col": 6
+    },
+    {
+      "row": 4,
+      "col": 7
+    },
+    {
+      "row": 4,
+      "col": 8
+    },
+    {
+      "row": 4,
+      "col": 10
+    },
+    {
+      "row": 4,
+      "col": 11
+    },
+    {
+      "row": 4,
+      "col": 12
+    },
+    {
+      "row": 6,
+      "col": 2
+    },
+    {
+      "row": 6,
+      "col": 3
+    },
+    {
+      "row": 6,
+      "col": 4
+    },
+    {
+      "row": 6,
+      "col": 6
+    },
+    {
+      "row": 6,
+      "col": 7
+    },
+    {
+      "row": 6,
+      "col": 8
+    },
+    {
+      "row": 6,
+      "col": 10
+    },
+    {
+      "row": 6,
+      "col": 11
+    },
+    {
+      "row": 6,
+      "col": 12
+    },
+    {
+      "row": 8,
+      "col": 2
+    },
+    {
+      "row": 8,
+      "col": 3
+    },
+    {
+      "row": 8,
+      "col": 4
+    },
+    {
+      "row": 8,
+      "col": 10
+    },
+    {
+      "row": 8,
+      "col": 11
+    },
+    {
+      "row": 8,
+      "col": 12
+    }
+  ],
+  "considerations": [
+    {
+      "student1": 30,
+      "condition": "Front",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 15,
+      "condition": "NearTeacher",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 19,
+      "condition": "NearTeacher",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 5,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 10,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 17,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 21,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 25,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 29,
+      "condition": "Back",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 3,
+      "condition": "Front",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 11,
+      "condition": "Front",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 16,
+      "condition": "Front",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 24,
+      "condition": "Front",
+      "student2": null,
+      "importance": "high"
+    },
+    {
+      "student1": 26,
+      "condition": "Front",
+      "student2": null,
+      "importance": "medium"
+    },
+    {
+      "student1": 8,
+      "condition": "Front",
+      "student2": null,
+      "importance": "medium"
+    },
+    {
+      "student1": 23,
+      "condition": "Front",
+      "student2": null,
+      "importance": "medium"
+    },
+    {
+      "student1": 20,
+      "condition": "Far",
+      "student2": 23,
+      "importance": "medium"
+    },
+    {
+      "student1": 12,
+      "condition": "Far",
+      "student2": 13,
+      "importance": "medium"
+    },
+    {
+      "student1": 3,
+      "condition": "Far",
+      "student2": 30,
+      "importance": "medium"
+    },
+    {
+      "student1": 21,
+      "condition": "Far",
+      "student2": 22,
+      "importance": "medium"
+    },
+    {
+      "student1": 1,
+      "condition": "Near",
+      "student2": 16,
+      "importance": "medium"
+    },
+    {
+      "student1": 3,
+      "condition": "Near",
+      "student2": 4,
+      "importance": "medium"
+    },
+    {
+      "student1": 7,
+      "condition": "Near",
+      "student2": 24,
+      "importance": "medium"
+    },
+    {
+      "student1": 25,
+      "condition": "Near",
+      "student2": 29,
+      "importance": "low"
+    },
+    {
+      "student1": 5,
+      "condition": "Near",
+      "student2": 17,
+      "importance": "low"
+    }
+  ],
+  "groups": []
+}

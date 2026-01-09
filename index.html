@@ -21,10 +21,16 @@
     </div>
 
     <div class="layout-buttons">
+        <button id="downloadTemplateBtn">Download Template</button>
+        <button id="importClassListBtn">Import Class List</button>
+        <span class="button-separator"></span>
         <button id="saveLayoutBtn" disabled>Save Layout</button>
         <button id="loadLayoutBtn">Load Layout</button>
         <input type="file" id="loadLayoutInput" style="display: none;" accept=".json">
+        <input type="file" id="classCsvInput" style="display: none;" accept=".csv">
     </div>
+    <div id="importStatus"
+        style="width: 504px; text-align: right; margin-top: 5px; font-weight: bold; min-height: 20px;"></div>
 
     <div class="class-position">Back of Class</div>
     <div class="main-content-container">
@@ -74,7 +80,7 @@
         <div class="considerations-row">
             <div class="input-group">
                 <label for="integer1">Index no:</label>
-                <input type="number" id="integer1" name="integer1" disabled min="1">
+                <input type="text" id="integer1" name="integer1" disabled>
             </div>
 
             <div class="input-group">
@@ -90,7 +96,7 @@
 
             <div class="input-group">
                 <label for="integer2">Index no:</label>
-                <input type="number" id="integer2" name="integer2" disabled min="1">
+                <input type="text" id="integer2" name="integer2" disabled>
             </div>
 
             <div class="input-group">
