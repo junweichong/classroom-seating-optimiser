@@ -140,11 +140,12 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
         allowedSet: new Set(gc.allowedSeatIndices)
     }));
 
-    const populationSize = 5000;
-    const generations = 500;
+    const populationSize = 500;
+    const generations = 500; // Cap at 500, but we'll likely stop earlier
     const mutationRate = 0.03;
-    const tournamentSize = 8;
+    const tournamentSize = 5; // Reduced slightly for smaller population
     const elitismCount = 2;
+    const maxStaleGenerations = 50; // Stop if no improvement for 50 gens
 
     let population = [];
     for (let i = 0; i < populationSize; i++) {
@@ -153,6 +154,8 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
 
     let bestArrangement = null;
     let bestPenalty = Infinity;
+
+    let staleGenerations = 0;
 
     for (let gen = 0; gen < generations; gen++) {
         const evaluatedPopulation = population.map(arrangement => {
@@ -163,7 +166,15 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
         if (evaluatedPopulation[0].penalty < bestPenalty) {
             bestPenalty = evaluatedPopulation[0].penalty;
             bestArrangement = evaluatedPopulation[0].arrangement;
+            staleGenerations = 0; // Reset counter on improvement
             console.log(`New best penalty in generation ${gen}: ${bestPenalty}`);
+        } else {
+            staleGenerations++;
+        }
+
+        if (staleGenerations >= maxStaleGenerations) {
+            console.log(`Stopping early at generation ${gen} due to no improvement for ${maxStaleGenerations} generations.`);
+            break;
         }
 
         const newPopulation = [];
