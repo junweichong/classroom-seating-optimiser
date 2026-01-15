@@ -422,16 +422,16 @@ export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableC
 
 function getColorName(hex) {
     const colorMap = {
-        "#FF0000": "Red",
-        "#00FF00": "Green",
-        "#00BFFF": "Blue",
-        "#FFFF00": "Yellow",
-        "#800080": "Purple",
-        "#00FFFF": "Cyan",
-        "#8B4513": "Brown",
-        "#666666ff": "Gray",
-        "#000000ff": "Black",
-        "#ffffffff": "White",
+        "#FFB7B2": "Red",
+        "#B5EAD7": "Green",
+        "#BAE1FF": "Blue",
+        "#FFFFB5": "Yellow",
+        "#A9A9A9": "Gray",
+        "#F9F9F9": "White",
+        "#E6BE8A": "Brown",
+        "#D3D3D3": "Light Gray",
+        "#97F2F3": "Cyan",
+        "#D7BDE2": "Purple",
     };
     return colorMap[hex] || "";
 }
