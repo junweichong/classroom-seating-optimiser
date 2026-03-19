@@ -1,8 +1,8 @@
 import { GRID_WIDTH } from './constants.js';
 
-export function saveLayout(teacherTableCoord, selectedSeatsCoords, getConsiderations, getGroupsData) {
+export function saveLayout(teacherTableCoords, selectedSeatsCoords, getConsiderations, getGroupsData) {
     const layout = {
-        teacherTable: teacherTableCoord,
+        teacherTable: teacherTableCoords,
         selectedSeats: selectedSeatsCoords,
         considerations: getConsiderations(),
         groups: getGroupsData ? getGroupsData() : []
@@ -39,12 +39,15 @@ export function applyLayout(layout, initialise, confirmTeacherSelection, confirm
     initialise();
 
     if (layout.teacherTable) {
-        const index = layout.teacherTable.row * GRID_WIDTH + layout.teacherTable.col;
-        const teacherBtn = document.querySelector(`.grid-button[data-index="${index}"]`);
-        if (teacherBtn) {
-            teacherBtn.classList.add('teacher-table');
-            confirmTeacherSelection();
-        }
+        const coords = Array.isArray(layout.teacherTable) ? layout.teacherTable : [layout.teacherTable];
+        coords.forEach(coord => {
+            const index = coord.row * GRID_WIDTH + coord.col;
+            const teacherBtn = document.querySelector(`.grid-button[data-index="${index}"]`);
+            if (teacherBtn) {
+                teacherBtn.classList.add('teacher-table');
+            }
+        });
+        confirmTeacherSelection();
     }
 
     if (layout.selectedSeats) {
@@ -68,10 +71,18 @@ export function applyLayout(layout, initialise, confirmTeacherSelection, confirm
             firstRow.querySelector('[name="importance"]').value = firstCondition.importance || 'high';
 
             const secondInt = firstRow.querySelector('[name="integer2"]');
-            if (['Front', 'Back', 'NearTeacher'].includes(firstCondition.condition)) {
+            const importanceSelect = firstRow.querySelector('[name="importance"]');
+            if (['Front', 'Back', 'NearTeacher', 'Tall'].includes(firstCondition.condition)) {
                 secondInt.disabled = true;
             } else {
                 secondInt.disabled = false;
+            }
+
+            if (firstCondition.condition === 'Tall') {
+                importanceSelect.disabled = true;
+                importanceSelect.value = 'high';
+            } else {
+                importanceSelect.disabled = false;
             }
         }
         layout.considerations.forEach(cond => addConditionRow(cond));

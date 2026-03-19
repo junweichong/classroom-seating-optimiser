@@ -100,25 +100,34 @@ export function addConditionRow(condition = null, studentCount) {
         input.disabled = false;
         input.value = '';
     });
+    const conditionSelect = newRow.querySelector('select[name="condition"]');
+    const importanceSelect = newRow.querySelector('select[name="importance"]');
+    const secondIntegerInput = newRow.querySelector('[name="integer2"]');
+
     newRow.querySelector('select[name="condition"]').value = 'Far';
     newRow.querySelector('select[name="importance"]').value = 'high';
 
     if (condition) {
         newRow.querySelector('[name="integer1"]').value = condition.student1 || '';
-        newRow.querySelector('[name="condition"]').value = condition.condition || 'Far';
+        conditionSelect.value = condition.condition || 'Far';
         newRow.querySelector('[name="integer2"]').value = condition.student2 || '';
-        newRow.querySelector('[name="importance"]').value = condition.importance || 'high';
+        importanceSelect.value = condition.importance || 'high';
     }
 
-    const conditionSelect = newRow.querySelector('select[name="condition"]');
-    const secondIntegerInput = newRow.querySelector('[name="integer2"]');
     const selectedValue = conditionSelect.value;
 
-    if (selectedValue === 'Front' || selectedValue === 'Back' || selectedValue === 'NearTeacher') {
+    if (selectedValue === 'Front' || selectedValue === 'Back' || selectedValue === 'NearTeacher' || selectedValue === 'Tall') {
         secondIntegerInput.disabled = true;
         secondIntegerInput.value = '';
     } else {
         secondIntegerInput.disabled = false;
+    }
+
+    if (selectedValue === 'Tall') {
+        importanceSelect.disabled = true;
+        importanceSelect.value = 'high';
+    } else {
+        importanceSelect.disabled = false;
     }
 
     const deleteBtn = newRow.querySelector('.delete-row-btn');
@@ -212,7 +221,7 @@ export function populateColorDropdown(colorDropdown, currentGroupColor) {
 }
 
 
-export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableCoord, groupsData = []) {
+export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableCoords, groupsData = []) {
     const popup = window.open('', '_blank', 'width=1100,height=900');
     if (!popup) {
         alert('Popup blocked! Please allow popups for this site.');
@@ -333,7 +342,12 @@ export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableC
         const row = Math.floor(i / GRID_WIDTH);
         const col = i % GRID_WIDTH;
 
-        if (teacherTableCoord && teacherTableCoord.row === row && teacherTableCoord.col === col) {
+        if (teacherTableCoords && Array.isArray(teacherTableCoords)) {
+            if (teacherTableCoords.some(coord => coord.row === row && coord.col === col)) {
+                cell.classList.add('teacher-table');
+                cell.textContent = 'T';
+            }
+        } else if (teacherTableCoords && teacherTableCoords.row === row && teacherTableCoords.col === col) {
             cell.classList.add('teacher-table');
             cell.textContent = 'T';
         }
@@ -387,7 +401,8 @@ export function openOptimizedLayoutWindow(arrangement, seatCoords, teacherTableC
             seats.forEach(seat => {
                 const id = seat.dataset.studentId;
                 if (studentData[id]) {
-                    seat.textContent = studentData[id];
+                    const data = studentData[id];
+                    seat.textContent = typeof data === 'object' ? data.name : data;
                 }
             });
         };

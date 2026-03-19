@@ -31,7 +31,7 @@ import { saveLayout, loadLayout, applyLayout } from './layout.js';
 document.addEventListener('DOMContentLoaded', () => {
     let selectedSeatsCoords = [];
     let studentCount = 0;
-    let teacherTableCoord = null;
+    let teacherTableCoords = [];
     let teacherTableConfirmed = false;
     let keySequence = '';
     let groupSelectionMode = false;
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialiseDOM(toggleSeat);
         selectedSeatsCoords = [];
         studentCount = 0;
-        teacherTableCoord = null;
+        teacherTableCoords = [];
         teacherTableConfirmed = false;
         keySequence = '';
         groupSelectionMode = false;
@@ -68,19 +68,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Disable group inputs
         document.querySelectorAll('.groups-container input, .groups-container button').forEach(el => el.disabled = true);
 
-        const bestArrangement = runOptimisation(considerations, studentCount, selectedSeatsCoords, teacherTableCoord, groupConstraints);
+        const storedData = sessionStorage.getItem('classStudentData');
+        const studentMetadata = storedData ? JSON.parse(storedData) : null;
+
+        const bestArrangement = runOptimisation(considerations, studentCount, selectedSeatsCoords, teacherTableCoords, groupConstraints, studentMetadata);
         if (bestArrangement) {
-            openOptimizedLayoutWindow(bestArrangement, selectedSeatsCoords, teacherTableCoord, groupConstraints);
+            openOptimizedLayoutWindow(bestArrangement, selectedSeatsCoords, teacherTableCoords, groupConstraints);
         }
 
         // Based on existing patterns, we might want to keep them disabled until 'Reselect Seats' is clicked)
     });
-    saveLayoutBtn.addEventListener('click', () => saveLayout(teacherTableCoord, selectedSeatsCoords, getRawConsiderations, getGroupsData));
+    saveLayoutBtn.addEventListener('click', () => saveLayout(teacherTableCoords, selectedSeatsCoords, getRawConsiderations, getGroupsData));
     loadLayoutBtn.addEventListener('click', () => loadLayoutInput.click());
     loadLayoutInput.addEventListener('change', (event) => loadLayout(event, (layout) => applyLayout(layout, initialise, confirmTeacherSelection, confirmSelection, addConditionRow, addGroupRow)));
 
     downloadTemplateBtn.addEventListener('click', () => {
-        const csvContent = "Index No,Name";
+        const csvContent = "Index No,Name,Handed";
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -106,14 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Try to find indices for 'index'/'id' and 'name'
             let idIndex = 0;
             let nameIndex = 1;
+            let handedIndex = -1;
 
             if (rows.length > 0) {
                 const header = rows[0].toLowerCase().split(',');
                 const foundId = header.findIndex(h => h.includes('index') || h.includes('id') || h.includes('no'));
                 const foundName = header.findIndex(h => h.includes('name') || h.includes('student'));
+                const foundHanded = header.findIndex(h => h.includes('handed') || h.includes('hand'));
 
                 if (foundId !== -1) idIndex = foundId;
                 if (foundName !== -1) nameIndex = foundName;
+                if (foundHanded !== -1) handedIndex = foundHanded;
             }
 
             for (let i = 1; i < rows.length; i++) {
@@ -125,9 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const id = parseInt(cols[idIndex].trim(), 10);
                 const name = cols[nameIndex] ? cols[nameIndex].trim() : '';
+                const handed = (handedIndex !== -1 && cols[handedIndex]) ? cols[handedIndex].trim().toUpperCase() : '';
 
                 if (!isNaN(id) && name) {
-                    studentData[id] = name;
+                    studentData[id] = { name, handed };
                     count++;
                 }
             }
@@ -288,13 +295,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target.name === 'condition') {
             const row = event.target.closest('.considerations-row');
             const secondIntegerInput = row.querySelector('[name="integer2"]');
+            const importanceSelect = row.querySelector('[name="importance"]');
             const selectedValue = event.target.value;
 
-            if (selectedValue === 'Front' || selectedValue === 'Back' || selectedValue === 'NearTeacher') {
+            if (selectedValue === 'Front' || selectedValue === 'Back' || selectedValue === 'NearTeacher' || selectedValue === 'Tall') {
                 secondIntegerInput.disabled = true;
                 secondIntegerInput.value = '';
             } else {
                 secondIntegerInput.disabled = false;
+            }
+
+            if (selectedValue === 'Tall') {
+                importanceSelect.disabled = true;
+                importanceSelect.value = 'high';
+            } else {
+                importanceSelect.disabled = false;
             }
         }
     });
@@ -327,10 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (button.classList.contains('teacher-table')) {
                 button.classList.remove('teacher-table');
             } else {
-                if (document.querySelectorAll('.teacher-table').length < 1) {
+                if (document.querySelectorAll('.teacher-table').length < 3) {
                     button.classList.add('teacher-table');
                 } else {
-                    alert('You can only select 1 grid for the teacher\'s table.');
+                    alert('You can only select up to 3 grids for the teacher\'s table.');
                 }
             }
         } else {
@@ -374,26 +389,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function confirmTeacherSelection() {
-        const teacherButton = document.querySelector('.grid-button.teacher-table');
-        if (!teacherButton) {
-            alert('Please select a grid for the teacher\'s table.');
+        const teacherButtons = Array.from(document.querySelectorAll('.grid-button.teacher-table'));
+        if (teacherButtons.length !== 3) {
+            alert('Please select exactly 3 grids for the teacher\'s table.');
             return;
         }
 
-        if (teacherButton.classList.contains('active')) {
+        // Validate straight line (horizontal or vertical) and adjacent
+        const coords = teacherButtons.map(btn => {
+            const index = parseInt(btn.dataset.index, 10);
+            return { row: Math.floor(index / GRID_WIDTH), col: index % GRID_WIDTH };
+        });
+
+        const rows = coords.map(c => c.row).sort((a, b) => a - b);
+        const cols = coords.map(c => c.col).sort((a, b) => a - b);
+
+        const isHorizontal = rows.every(r => r === rows[0]) && (cols[2] - cols[0] === 2) && (cols[1] - cols[0] === 1);
+        const isVertical = cols.every(c => c === cols[0]) && (rows[2] - rows[0] === 2) && (rows[1] - rows[0] === 1);
+
+        if (!isHorizontal && !isVertical) {
+            alert('The teacher\'s table must be in a straight horizontal or vertical line of three adjacent tables.');
+            return;
+        }
+
+        // Check for student seat overlap
+        if (teacherButtons.some(btn => btn.classList.contains('active'))) {
             alert('A student seat cannot be the teacher\'s table.');
-            teacherButton.classList.remove('teacher-table');
             return;
         }
 
-        const index = parseInt(teacherButton.dataset.index, 10);
-        teacherTableCoord = { row: Math.floor(index / GRID_WIDTH), col: index % GRID_WIDTH };
-
+        teacherTableCoords = coords;
         teacherTableConfirmed = true;
         confirmTeacherBtn.disabled = true;
         reselectTeacherBtn.disabled = false;
 
-        teacherButton.style.pointerEvents = 'none';
+        teacherButtons.forEach(btn => btn.style.pointerEvents = 'none');
 
         if (studentCount > 0) {
             document.querySelectorAll('.grid-button:not(.active):not(.teacher-table)').forEach(btn => {
@@ -416,10 +446,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function reselectTeacher() {
         teacherTableConfirmed = false;
-        const teacherButton = document.querySelector('.grid-button.teacher-table');
-        if (teacherButton) {
-            teacherButton.classList.remove('teacher-table');
-        }
+        const teacherButtons = document.querySelectorAll('.grid-button.teacher-table');
+        teacherButtons.forEach(btn => btn.classList.remove('teacher-table'));
 
         document.querySelectorAll('.grid-button:not(.active)').forEach(btn => {
             btn.style.pointerEvents = 'auto';
@@ -607,21 +635,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const lowerInput = input.toLowerCase().trim();
 
         // 1. Exact match by name
-        for (const [id, name] of Object.entries(studentData)) {
+        for (const [id, data] of Object.entries(studentData)) {
+            const name = typeof data === 'object' ? data.name : data;
             if (name.toLowerCase() === lowerInput) {
                 return parseInt(id, 10);
             }
         }
 
         // 2. Starts with match
-        for (const [id, name] of Object.entries(studentData)) {
+        for (const [id, data] of Object.entries(studentData)) {
+            const name = typeof data === 'object' ? data.name : data;
             if (name.toLowerCase().startsWith(lowerInput)) {
                 return parseInt(id, 10);
             }
         }
 
         // 3. Includes match
-        for (const [id, name] of Object.entries(studentData)) {
+        for (const [id, data] of Object.entries(studentData)) {
+            const name = typeof data === 'object' ? data.name : data;
             if (name.toLowerCase().includes(lowerInput)) {
                 return parseInt(id, 10);
             }
