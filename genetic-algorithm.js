@@ -19,73 +19,64 @@ function createRandomArrangement(numStudents) {
     return students;
 }
 
-function calculateTotalPenalty(arrangement, considerations, seatCoords, teacherTableCoords, groupConstraints, { minRow, minCol, maxCol }, studentMetadata) {
+function calculateTotalPenalty(arrangement, considerations, seatCoords, teacherTableCoords, groupConstraints, { minRow, maxRow, minCol, maxCol, maxRowDist, maxColDist, maxDiagDist, seatSet, leftHandedStudents }) {
     let totalPenalty = 0;
 
-    const studentPositions = new Map();
+    const studentPositions = new Array(arrangement.length + 1);
     arrangement.forEach((studentId, index) => {
-        studentPositions.set(studentId, seatCoords[index]);
+        studentPositions[studentId] = seatCoords[index];
     });
 
     for (const c of considerations) {
         const constVal = PENALTY_CONSTANTS[c.importance];
-        const pos1 = studentPositions.get(c.student1);
-        const pos2 = c.student2 ? studentPositions.get(c.student2) : null;
+        const pos1 = studentPositions[c.student1];
+        const pos2 = c.student2 ? studentPositions[c.student2] : null;
 
         if (!pos1 || ((c.condition === 'Far' || c.condition === 'Near') && !pos2)) continue;
 
         let penalty = 0;
         switch (c.condition) {
             case 'Far':
-                const distFar = Math.hypot(pos1.row - pos2.row, pos1.col - pos2.col);
-                penalty = constVal * -distFar;
+                const distFar = Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col);
+                penalty = constVal * -(distFar / (maxRowDist + maxColDist));
                 break;
             case 'Near':
-                const distNear = Math.hypot(pos1.row - pos2.row, pos1.col - pos2.col);
-                penalty = constVal * distNear;
+                const distNear = Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col);
+                penalty = constVal * (distNear / (maxRowDist + maxColDist));
                 break;
             case 'Front':
-                penalty = constVal * (GRID_HEIGHT - 1 - pos1.row);
+                penalty = constVal * (minRow === maxRow ? 0 : Math.abs(maxRow - pos1.row) / maxRowDist);
                 break;
             case 'Back':
-                penalty = constVal * pos1.row;
+                penalty = constVal * (minRow === maxRow ? 0 : Math.abs(pos1.row - minRow) / maxRowDist);
                 break;
             case 'NearTeacher':
                 if (!teacherTableCoords || teacherTableCoords.length === 0) break;
                 const dists = teacherTableCoords.map(coord => Math.hypot(pos1.row - coord.row, pos1.col - coord.col));
                 const minDistNearTeacher = Math.min(...dists);
-                penalty = constVal * minDistNearTeacher;
+                penalty = constVal * (minDistNearTeacher / maxDiagDist);
                 break;
             case 'Tall':
-                const distToBack = pos1.row - minRow;
-                const distToLeft = maxCol - pos1.col;   // Student perspective: Left is grid-right
-                const distToRight = pos1.col - minCol;  // Student perspective: Right is grid-left
-                // Add an offset to side distances to prioritize the back row (0 penalty) over sides (0.5 penalty)
-                penalty = constVal * Math.min(distToBack, distToLeft + 0.5, distToRight + 0.5);
+                const normDistToBack = (pos1.row - minRow) / maxRowDist;
+                const normDistToLeft = (maxCol - pos1.col) / maxColDist;
+                const normDistToRight = (pos1.col - minCol) / maxColDist;
+                // Base penalty for being away from back/sides
+                penalty = constVal * Math.min(normDistToBack, normDistToLeft + 0.1, normDistToRight + 0.1);
                 break;
         }
         totalPenalty += penalty;
     }
 
     // Apply Handedness Penalties
-    if (studentMetadata) {
-        const seatSet = new Set(seatCoords.map(c => `${c.row},${c.col}`));
-        const handednessPenalty = PENALTY_CONSTANTS['medium']; // Use medium importance for handedness
+    if (leftHandedStudents.length > 0) {
+        const handednessPenalty = PENALTY_CONSTANTS['high']; // Use high importance for handedness
 
-        arrangement.forEach((studentId, index) => {
-            const data = studentMetadata[studentId];
-            if (data && typeof data === 'object') {
-                const pos = seatCoords[index];
-                if (data.handed === 'R') {
-                    // Right-handed: Prefer empty space at student-right (grid-left: col - 1)
-                    if (seatSet.has(`${pos.row},${pos.col - 1}`)) {
-                        totalPenalty += handednessPenalty;
-                    }
-                } else if (data.handed === 'L') {
-                    // Left-handed: Prefer empty space at student-left (grid-right: col + 1)
-                    if (seatSet.has(`${pos.row},${pos.col + 1}`)) {
-                        totalPenalty += handednessPenalty;
-                    }
+        leftHandedStudents.forEach((studentId) => {
+            const pos = studentPositions[studentId];
+            if (pos) {
+                // Left-handed: Prefer empty space at student-left (grid-right: col + 1)
+                if (seatSet.has(`${pos.row},${pos.col + 1}`)) {
+                    totalPenalty += handednessPenalty;
                 }
             }
         });
@@ -96,7 +87,7 @@ function calculateTotalPenalty(arrangement, considerations, seatCoords, teacherT
         for (const constraint of groupConstraints) {
             const allowedSet = constraint.allowedSet;
             for (const studentId of constraint.students) {
-                const pos = studentPositions.get(studentId);
+                const pos = studentPositions[studentId];
                 if (pos) {
                     const seatGridIndex = pos.row * GRID_WIDTH + pos.col;
                     if (!allowedSet.has(seatGridIndex)) {
@@ -163,13 +154,26 @@ function mutate(arrangement) {
 
 export function runOptimisation(considerations, studentCount, selectedSeatsCoords, teacherTableCoords, groupConstraints = [], studentMetadata = null) {
     console.log('Starting optimisation with Genetic Algorithm...');
-    const startTime = performance.now();
     if (!validateConsiderations(considerations, studentCount)) return null;
 
     const minRow = Math.min(...selectedSeatsCoords.map(c => c.row));
+    const maxRow = Math.max(...selectedSeatsCoords.map(c => c.row));
     const minCol = Math.min(...selectedSeatsCoords.map(c => c.col));
     const maxCol = Math.max(...selectedSeatsCoords.map(c => c.col));
-    const bounds = { minRow, minCol, maxCol };
+    const maxRowDist = maxRow - minRow || 1;
+    const maxColDist = maxCol - minCol || 1;
+    const maxDiagDist = Math.hypot(maxRowDist, maxColDist);
+    const seatSet = new Set(selectedSeatsCoords.map(c => `${c.row},${c.col}`));
+    const leftHandedStudents = [];
+    if (studentMetadata) {
+        for (const [id, data] of Object.entries(studentMetadata)) {
+            if (data && typeof data === 'object' && data.handed && data.handed.toString().toUpperCase() === 'L') {
+                leftHandedStudents.push(parseInt(id, 10));
+            }
+        }
+    }
+
+    const bounds = { minRow, maxRow, minCol, maxCol, maxRowDist, maxColDist, maxDiagDist, seatSet, leftHandedStudents };
 
     // Pre-process group constraints for performance
     const processedGroupConstraints = groupConstraints.map(gc => ({
@@ -196,7 +200,7 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
 
     for (let gen = 0; gen < generations; gen++) {
         const evaluatedPopulation = population.map(arrangement => {
-            const penalty = calculateTotalPenalty(arrangement, considerations, selectedSeatsCoords, teacherTableCoords, processedGroupConstraints, bounds, studentMetadata);
+            const penalty = calculateTotalPenalty(arrangement, considerations, selectedSeatsCoords, teacherTableCoords, processedGroupConstraints, bounds);
             return { arrangement, penalty };
         }).sort((a, b) => a.penalty - b.penalty);
 
@@ -234,7 +238,6 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
         population = newPopulation;
     }
 
-    const endTime = performance.now();
-    console.log(`Optimisation finished in ${(endTime - startTime).toFixed(2)}ms. Best penalty: ${bestPenalty}`);
+    console.log(`Optimisation finished. Best penalty: ${bestPenalty}`);
     return bestArrangement;
 }
