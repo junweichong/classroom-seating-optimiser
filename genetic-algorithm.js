@@ -181,9 +181,9 @@ export function runOptimisation(considerations, studentCount, selectedSeatsCoord
         allowedSet: new Set(gc.allowedSeatIndices)
     }));
 
-    const populationSize = 500;
+    const populationSize = 1000;
     const generations = 500; // Cap at 500, but we'll likely stop earlier
-    const mutationRate = 0.03;
+    const mutationRate = 0.05;
     const tournamentSize = 5; // Reduced slightly for smaller population
     const elitismCount = 2;
     const maxStaleGenerations = 50; // Stop if no improvement for 50 gens
